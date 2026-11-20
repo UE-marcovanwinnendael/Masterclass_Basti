@@ -41,12 +41,37 @@
 <p id="erro" role="status"></p>
 <p id="modo-email" class="hint">Seu aplicativo de e-mail abrirá com a inscrição preenchida. Revise e envie a mensagem por lá. A forma de contato que você escolheu será usada para o retorno.</p>
 </form>
+<section id="agradecimento" hidden aria-labelledby="titulo-agradecimento">
+<h2 id="titulo-agradecimento" tabindex="-1">Obrigada!</h2>
+<p id="mensagem-agradecimento"></p>
+<button type="button" id="voltar-formulario">Voltar ao formulário</button>
+</section>
 </main>
 <footer><a href="mailto:bialaus@gmail.com">Fale com Beatriz</a></footer>
 <script>
 const form = document.getElementById('formulario');
 const button = form.querySelector('button');
 const error = document.getElementById('erro');
+const thanks = document.getElementById('agradecimento');
+const back = document.getElementById('voltar-formulario');
+
+function showThanks(channel, draft) {
+  const contact = channel === 'whatsapp' ? 'WhatsApp' : 'e-mail';
+  const message = draft
+    ? 'Envie o e-mail que foi preparado para concluir sua inscrição. Assim que eu receber sua mensagem, vou entrar em contato com você por ' + contact + '.'
+    : 'Recebi sua inscrição! Vou entrar em contato com você por ' + contact + '.';
+  document.getElementById('mensagem-agradecimento').textContent = message;
+  back.hidden = !draft;
+  form.hidden = true;
+  thanks.hidden = false;
+  document.getElementById('titulo-agradecimento').focus();
+}
+
+back.addEventListener('click', () => {
+  thanks.hidden = true;
+  form.hidden = false;
+  button.focus();
+});
 // Para receber inscrições diretamente, informe a URL HTTPS do serviço que
 // aceita este JSON, autoriza a origem do GitHub Pages via CORS e retorna {ok:true}.
 const submissionEndpoint = '';
@@ -99,6 +124,7 @@ form.addEventListener('submit', async event => {
     }
     lines.push('', 'Aceito receber novidades: ' + (formData.has('aceitaOutrasDivulgacoes') ? 'Sim' : 'Não'));
     if (payload.website) return;
+    showThanks(payload.preferenciaContato, true);
     location.href = 'mailto:' + recipient + '?subject=' + encodeURIComponent('Inscrição na Masterclass BASTI')
       + '&body=' + encodeURIComponent(lines.join('\r\n'));
     return;
@@ -119,9 +145,7 @@ form.addEventListener('submit', async event => {
       error.textContent = result.error || 'Não consegui enviar sua inscrição. Tente novamente.';
       return;
     }
-    form.replaceWith(Object.assign(document.createElement('p'), {
-      textContent: 'Obrigada pela sua inscrição! Vou entrar em contato pelo canal que você escolheu.'
-    }));
+    showThanks(payload.preferenciaContato, false);
   } catch {
     error.textContent = 'Não consegui enviar sua inscrição agora. Verifique sua conexão e tente novamente.';
   } finally {
